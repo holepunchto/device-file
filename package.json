@@ -1,0 +1,26 @@
+{
+  "name": "device-file",
+  "version": "1.0.0",
+  "description": "Device only file",
+  "main": "index.js",
+  "dependencies": {
+    "bare-fs": "^4.0.1",
+    "fs-native-extensions": "^1.4.0"
+  },
+  "imports": {
+    "fs": {
+      "bare": "bare-fs",
+      "default": "fs"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/holepunchto/device-file.git"
+  },
+  "author": "Holepunch Inc",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/holepunchto/device-file/issues"
+  },
+  "homepage": "https://github.com/holepunchto/device-file"
+}
