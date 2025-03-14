@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Device only file",
   "main": "index.js",
+  "files": [
+    "index.js"
+  ],
   "dependencies": {
+    "b4a": "^1.6.7",
     "bare-fs": "^4.0.1",
     "fs-native-extensions": "^1.4.0"
   },
