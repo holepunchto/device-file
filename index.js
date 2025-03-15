@@ -29,9 +29,8 @@ async function writeDeviceFile (filename, data = {}) {
   s += 'device/inode=' + st.ino + nl
   s += 'device/created=' + created + nl
 
-  if (fsx.setAttr) {
+  if (await setAttr(fd, 'device-file', 'original')) {
     s += 'device/attribute=original' + nl
-    await fsx.setAttr(fd, 'device-file', 'original')
   }
 
 
@@ -95,7 +94,7 @@ async function verifyDeviceFile (filename, data = {}) {
   }
 
   const st = await fstat(fd)
-  const at = fsx.getAttr ? (await fsx.getAttr(fd, 'device-file')) : null
+  const at = await getAttr(fd, 'device-file')
   await close(fd)
 
   const sameAttr = b4a.toString(at || EMPTY) === attr
@@ -114,6 +113,23 @@ async function verifyDeviceFile (filename, data = {}) {
   }
 
   return result
+}
+
+async function getAttr (fd, name) {
+  try {
+    return await fsx.getAttr(fd, name)
+  } catch {
+    return null
+  }
+}
+
+async function setAttr (fd, name, value) {
+  try {
+    await fsx.setAttr(fd, name, value)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function fstat (fd) {
