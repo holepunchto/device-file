@@ -88,6 +88,7 @@ async function verifyDeviceFile (filename, data = {}) {
 
   for (const [k, v] of Object.entries(data)) {
     if (v === null) continue
+    if (result[k] === undefined) continue // allow upserts
     if (result[k] !== ('' + v)) {
       throw new Error('Invalid device file, ' + k + ' has changed')
     }
