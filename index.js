@@ -4,6 +4,7 @@ const b4a = require('b4a')
 
 const IS_WIN = global.Bare ? global.Bare.platform === 'win32' : global.process.platform === 'win32'
 const MODIFIED_SLACK = 3000
+const EMPTY = b4a.alloc(0)
 
 const nl = IS_WIN ? '\r\n' : '\n'
 
@@ -11,9 +12,6 @@ exports.create = writeDeviceFile
 exports.resume = verifyDeviceFile
 
 async function writeDeviceFile (filename, data = {}) {
-  // just incase old version to avoid too much bork
-  if (!fsx.setAttr) return
-
   let s = ''
 
   for (const [key, value] of Object.entries(data)) {
@@ -28,7 +26,11 @@ async function writeDeviceFile (filename, data = {}) {
   s += 'device/inode=' + st.ino + nl
   s += 'device/created=' + created + nl
 
-  await fsx.setAttr(fd, 'device-file', 'original')
+  if (fsx.setAttr) {
+    s += 'device/attribute=original' + nl
+    await fsx.setAttr(fd, 'device-file', 'original')
+  }
+
 
   await write(fd, b4a.from(s))
   await close(fd)
@@ -52,6 +54,7 @@ async function verifyDeviceFile (filename, data = {}) {
 
   let inode = 0
   let created = 0
+  let attr = ''
 
   for (const ln of s) {
     const i = ln.indexOf('=')
@@ -67,6 +70,9 @@ async function verifyDeviceFile (filename, data = {}) {
       case 'device/created':
         created = Number(v)
         break
+      case 'device/attribute':
+        attr = v
+        break
       default:
         result[k] = v
         break
@@ -80,10 +86,10 @@ async function verifyDeviceFile (filename, data = {}) {
   }
 
   const st = await fstat(fd)
-  const attr = await fsx.getAttr(fd, 'device-file')
+  const at = fsx.getAttr ? (await fsx.getAttr(fd, 'device-file')) : null
   await close(fd)
 
-  const sameAttr = !!attr && b4a.toString(attr) === 'original'
+  const sameAttr = b4a.toString(at || EMPTY) === attr
   const modified = Math.max(st.ctime.getTime(), st.mtime.getTime(), st.birthtime.getTime())
 
   if (!sameAttr) {
