@@ -2,7 +2,8 @@ const fs = require('fs')
 const fsx = require('fs-native-extensions')
 const b4a = require('b4a')
 
-const IS_WIN = global.Bare ? global.Bare.platform === 'win32' : global.process.platform === 'win32'
+const PLATFORM = global.Bare ? global.Bare.platform : global.process.platform
+const IS_WIN = PLATFORM === 'win32'
 const MODIFIED_SLACK = 3000
 const EMPTY = b4a.alloc(0)
 
@@ -24,6 +25,7 @@ async function writeDeviceFile (filename, data = {}) {
 
   const created = st.birthtime.getTime()
 
+  s += 'device/platform=' + PLATFORM + nl
   s += 'device/inode=' + st.ino + nl
   s += 'device/created=' + created + nl
 
@@ -56,6 +58,7 @@ async function verifyDeviceFile (filename, data = {}) {
   let inode = 0
   let created = 0
   let attr = ''
+  let platform = ''
 
   for (const ln of s) {
     const i = ln.indexOf('=')
@@ -65,6 +68,9 @@ async function verifyDeviceFile (filename, data = {}) {
     const v = ln.slice(i + 1).trim()
 
     switch (k) {
+      case 'device/platform':
+        platform = v
+        break
       case 'device/inode':
         inode = Number(v)
         break
@@ -94,11 +100,15 @@ async function verifyDeviceFile (filename, data = {}) {
   const sameAttr = b4a.toString(at || EMPTY) === attr
   const modified = Math.max(st.ctime.getTime(), st.mtime.getTime(), st.birthtime.getTime())
 
+  if (platform && platform !== PLATFORM) {
+    throw new Error('Invalid device file, was made on different platform')
+  }
+
   if (!sameAttr) {
     throw new Error('Invalid device file, was moved unsafely')
   }
 
-  if (!sameAttr || st.ino !== inode || Math.abs(modified - created) >= MODIFIED_SLACK) {
+  if (st.ino !== inode || Math.abs(modified - created) >= MODIFIED_SLACK) {
     throw new Error('Invalid device file, was modified')
   }
 
