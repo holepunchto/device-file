@@ -11,6 +11,13 @@
     "bare-fs": "^4.0.1",
     "fs-native-extensions": "^1.4.0"
   },
+  "devDependencies": {
+    "brittle": "^3.13.1",
+    "standard": "^17.1.2"
+  },
+  "scripts": {
+    "test": "standard && brittle test.js"
+  },
   "imports": {
     "fs": {
       "bare": "bare-fs",

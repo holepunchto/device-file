@@ -4,8 +4,10 @@ const b4a = require('b4a')
 
 const PLATFORM = global.Bare ? global.Bare.platform : global.process.platform
 const IS_WIN = PLATFORM === 'win32'
+const IS_LINUX = PLATFORM === 'linux'
 const MODIFIED_SLACK = 3000
 const EMPTY = b4a.alloc(0)
+const ATTR = IS_LINUX ? 'user.device-file' : 'device-file'
 
 const nl = IS_WIN ? '\r\n' : '\n'
 
@@ -29,10 +31,9 @@ async function writeDeviceFile (filename, data = {}) {
   s += 'device/inode=' + st.ino + nl
   s += 'device/created=' + created + nl
 
-  if (await setAttr(fd, 'device-file', 'original')) {
+  if (await setAttr(fd, ATTR, b4a.from('original'))) {
     s += 'device/attribute=original' + nl
   }
-
 
   await write(fd, b4a.from(s))
   await close(fd)
@@ -94,7 +95,7 @@ async function verifyDeviceFile (filename, data = {}) {
   }
 
   const st = await fstat(fd)
-  const at = await getAttr(fd, 'device-file')
+  const at = await getAttr(fd, ATTR)
   await close(fd)
 
   const sameAttr = b4a.toString(at || EMPTY) === attr
@@ -125,10 +126,8 @@ async function getAttr (fd, name) {
 
 async function setAttr (fd, name, value) {
   try {
-    // await fsx.setAttr(fd, name, value)
-    // return true
-    // tmp disable, something fishy is going on
-    return false
+    await fsx.setAttr(fd, name, value)
+    return true
   } catch {
     return false
   }
