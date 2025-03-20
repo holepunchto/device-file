@@ -125,8 +125,10 @@ async function getAttr (fd, name) {
 
 async function setAttr (fd, name, value) {
   try {
-    await fsx.setAttr(fd, name, value)
-    return true
+    // await fsx.setAttr(fd, name, value)
+    // return true
+    // tmp disable, something fishy is going on
+    return false
   } catch {
     return false
   }
