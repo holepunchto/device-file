@@ -5,7 +5,7 @@ const b4a = require('b4a')
 const PLATFORM = global.Bare ? global.Bare.platform : global.process.platform
 const IS_WIN = PLATFORM === 'win32'
 const IS_LINUX = PLATFORM === 'linux'
-const MODIFIED_SLACK = 3000
+const MODIFIED_SLACK = 5000
 const EMPTY = b4a.alloc(0)
 const ATTR = IS_LINUX ? 'user.device-file' : 'device-file'
 
@@ -25,7 +25,7 @@ async function writeDeviceFile (filename, data = {}) {
   const fd = await open(filename, 'w')
   const st = await fstat(fd)
 
-  const created = st.birthtime.getTime()
+  const created = Date.now()
 
   s += 'device/platform=' + PLATFORM + nl
   s += 'device/inode=' + st.ino + nl
@@ -109,7 +109,7 @@ async function verifyDeviceFile (filename, data = {}) {
     throw new Error('Invalid device file, was moved unsafely')
   }
 
-  if (st.ino !== inode || Math.abs(modified - created) >= MODIFIED_SLACK) {
+  if (st.ino !== inode || (created && Math.abs(modified - created) >= MODIFIED_SLACK)) {
     throw new Error('Invalid device file, was modified')
   }
 
