@@ -99,7 +99,7 @@ async function verifyDeviceFile (filename, data = {}) {
   await close(fd)
 
   const sameAttr = b4a.toString(at || EMPTY) === attr
-  const modified = Math.max(st.ctime.getTime(), st.mtime.getTime(), st.birthtime.getTime())
+  const modified = Math.max(st.mtime.getTime(), st.birthtime.getTime())
 
   if (platform && platform !== PLATFORM) {
     throw new Error('Invalid device file, was made on different platform')
