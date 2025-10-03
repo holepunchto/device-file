@@ -10,7 +10,7 @@ Stores some metadata about the device and complains if it thinks its been modifi
 
 ## Usage
 
-``` js
+```js
 const { create, resume } = require('device-file')
 
 await create('DEVICE', { appId: 'my-app-id' }) // pass whatever unique data you have for the device/app
