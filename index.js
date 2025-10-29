@@ -109,10 +109,7 @@ async function verifyDeviceFile(filename, data = {}) {
     throw new Error('Invalid device file, was moved unsafely')
   }
 
-  if (
-    st.ino !== inode ||
-    (created && Math.abs(modified - created) >= MODIFIED_SLACK)
-  ) {
+  if (st.ino !== inode || (created && Math.abs(modified - created) >= MODIFIED_SLACK)) {
     throw new Error('Invalid device file, was modified')
   }
 
