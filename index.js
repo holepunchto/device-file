@@ -1,6 +1,7 @@
 const fs = require('fs')
 const fsx = require('fs-native-extensions')
 const b4a = require('b4a')
+const ReadyResource = require('ready-resource')
 
 const PLATFORM = global.Bare ? global.Bare.platform : global.process.platform
 const IS_WIN = PLATFORM === 'win32'
@@ -11,8 +12,70 @@ const ATTR = IS_LINUX ? 'user.device-file' : 'device-file'
 
 const nl = IS_WIN ? '\r\n' : '\n'
 
-exports.create = writeDeviceFile
-exports.resume = verifyDeviceFile
+module.exports = class DeviceFile extends ReadyResource {
+  constructor(filename, { create = true, wait = false, lock = wait, data = {} } = {}) {
+    super()
+
+    this.fd = 0
+    this.filename = filename
+    this.create = create
+    this.updating = false
+    this.wait = wait
+    this.lock = lock
+    this.data = data
+  }
+
+  async _open() {
+    let { fd, data } = await verifyDeviceFile(this.filename, this.data)
+
+    if (fd === 0) {
+      if (!this.create) throw new Error('No device file present')
+      fd = await writeDeviceFile(this.filename, this.data)
+    } else {
+      this.data = data
+    }
+
+    if (this.lock) {
+      this.fd = fd
+      if (!(await lockFd(this.fd, this.wait))) {
+        await this._release()
+        throw new Error('Device file is locked')
+      }
+    } else {
+      await this._release()
+    }
+  }
+
+  _close() {
+    return this._release()
+  }
+
+  async _release() {
+    if (!this.fd) return
+    await close(this.fd)
+    this.fd = 0
+  }
+
+  async suspend() {
+    if (!this.opened) await this.ready()
+    if (this.updating) return
+
+    this.updating = true
+    await this._release()
+    this.updating = false
+  }
+
+  async resume() {
+    if (!this.opened) await this.ready()
+    if (!this.lock || this.fd || this.updating) return
+
+    this.updating = true
+    const { fd } = await verifyDeviceFile(this.filename, this.data)
+    this.fd = fd
+    await lockFd(this.fd, this.wait)
+    this.updating = false
+  }
+}
 
 async function writeDeviceFile(filename, data = {}) {
   let s = ''
@@ -36,7 +99,8 @@ async function writeDeviceFile(filename, data = {}) {
   }
 
   await write(fd, b4a.from(s))
-  await close(fd)
+
+  return fd
 }
 
 async function verifyDeviceFile(filename, data = {}) {
@@ -48,7 +112,7 @@ async function verifyDeviceFile(filename, data = {}) {
     fd = 0
   }
 
-  if (fd === 0) return null
+  if (fd === 0) return { fd: 0, data: null }
 
   const buf = await read(fd)
   const result = {}
@@ -90,30 +154,33 @@ async function verifyDeviceFile(filename, data = {}) {
     if (v === null) continue
     if (result[k] === undefined) continue // allow upserts
     if (result[k] !== '' + v) {
+      await close(fd)
       throw new Error('Invalid device file, ' + k + ' has changed')
     }
   }
 
   const st = await fstat(fd)
   const at = await getAttr(fd, ATTR)
-  await close(fd)
 
   const sameAttr = b4a.toString(at || EMPTY) === attr
   const modified = Math.max(st.mtime.getTime(), st.birthtime.getTime())
 
   if (platform && platform !== PLATFORM) {
+    await close(fd)
     throw new Error('Invalid device file, was made on different platform')
   }
 
   if (!sameAttr) {
+    await close(fd)
     throw new Error('Invalid device file, was moved unsafely')
   }
 
   if (st.ino !== inode || (created && Math.abs(modified - created) >= MODIFIED_SLACK)) {
+    await close(fd)
     throw new Error('Invalid device file, was modified')
   }
 
-  return result
+  return { fd, data: result }
 }
 
 async function getAttr(fd, name) {
@@ -181,6 +248,12 @@ function read(fd) {
       fs.read(fd, buf, offset, buf.byteLength - offset, offset, onread)
     }
   })
+}
+
+async function lockFd(fd, wait) {
+  if (!wait) return fsx.tryLock(fd)
+  await fsx.waitForLock(fd)
+  return true
 }
 
 function open(filename, flags) {
