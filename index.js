@@ -14,7 +14,7 @@ const nl = IS_WIN ? '\r\n' : '\n'
 exports.create = writeDeviceFile
 exports.resume = verifyDeviceFile
 
-async function writeDeviceFile (filename, data = {}) {
+async function writeDeviceFile(filename, data = {}) {
   let s = ''
 
   for (const [key, value] of Object.entries(data)) {
@@ -39,7 +39,7 @@ async function writeDeviceFile (filename, data = {}) {
   await close(fd)
 }
 
-async function verifyDeviceFile (filename, data = {}) {
+async function verifyDeviceFile(filename, data = {}) {
   let fd = 0
 
   try {
@@ -89,7 +89,7 @@ async function verifyDeviceFile (filename, data = {}) {
   for (const [k, v] of Object.entries(data)) {
     if (v === null) continue
     if (result[k] === undefined) continue // allow upserts
-    if (result[k] !== ('' + v)) {
+    if (result[k] !== '' + v) {
       throw new Error('Invalid device file, ' + k + ' has changed')
     }
   }
@@ -109,14 +109,17 @@ async function verifyDeviceFile (filename, data = {}) {
     throw new Error('Invalid device file, was moved unsafely')
   }
 
-  if (st.ino !== inode || (created && Math.abs(modified - created) >= MODIFIED_SLACK)) {
+  if (
+    st.ino !== inode ||
+    (created && Math.abs(modified - created) >= MODIFIED_SLACK)
+  ) {
     throw new Error('Invalid device file, was modified')
   }
 
   return result
 }
 
-async function getAttr (fd, name) {
+async function getAttr(fd, name) {
   try {
     return await fsx.getAttr(fd, name)
   } catch {
@@ -124,7 +127,7 @@ async function getAttr (fd, name) {
   }
 }
 
-async function setAttr (fd, name, value) {
+async function setAttr(fd, name, value) {
   try {
     await fsx.setAttr(fd, name, value)
     return true
@@ -133,7 +136,7 @@ async function setAttr (fd, name, value) {
   }
 }
 
-function fstat (fd) {
+function fstat(fd) {
   return new Promise((resolve, reject) => {
     fs.fstat(fd, (err, st) => {
       if (err) reject(err)
@@ -142,7 +145,7 @@ function fstat (fd) {
   })
 }
 
-function close (fd) {
+function close(fd) {
   return new Promise((resolve, reject) => {
     fs.close(fd, (err, st) => {
       if (err) reject(err)
@@ -151,13 +154,13 @@ function close (fd) {
   })
 }
 
-function write (fd, buf) {
+function write(fd, buf) {
   return new Promise((resolve, reject) => {
     let offset = 0
 
     onwrite(null, 0)
 
-    function onwrite (err, wrote) {
+    function onwrite(err, wrote) {
       if (err) return reject(err)
       if (offset === buf.byteLength) return resolve()
       offset += wrote
@@ -166,7 +169,7 @@ function write (fd, buf) {
   })
 }
 
-function read (fd) {
+function read(fd) {
   const buf = b4a.allocUnsafe(4096)
 
   return new Promise((resolve, reject) => {
@@ -174,7 +177,7 @@ function read (fd) {
 
     fs.read(fd, buf, 0, buf.byteLength, 0, onread)
 
-    function onread (err, read) {
+    function onread(err, read) {
       if (err) return reject(err)
       if (read === 0) return resolve(buf.subarray(0, offset))
       offset += read
@@ -183,7 +186,7 @@ function read (fd) {
   })
 }
 
-function open (filename, flags) {
+function open(filename, flags) {
   return new Promise((resolve, reject) => {
     fs.open(filename, flags, (err, fd) => {
       if (err) reject(err)
