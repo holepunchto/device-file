@@ -107,7 +107,7 @@ async function verifyDeviceFile(filename, data = {}) {
   let fd = 0
 
   try {
-    fd = await open(filename, 'r')
+    fd = await open(filename, 'r+')
   } catch {
     fd = 0
   }
