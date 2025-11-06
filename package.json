@@ -9,6 +9,7 @@
   "dependencies": {
     "b4a": "^1.6.7",
     "bare-fs": "^4.0.1",
+    "bare-path": "^3.0.0",
     "fs-native-extensions": "^1.4.0",
     "ready-resource": "^1.2.0"
   },
@@ -27,6 +28,10 @@
     "fs": {
       "bare": "bare-fs",
       "default": "fs"
+    },
+    "path": {
+      "bare": "bare-path",
+      "default": "path"
     }
   },
   "repository": {

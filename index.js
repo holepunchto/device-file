@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 const fsx = require('fs-native-extensions')
 const b4a = require('b4a')
 const ReadyResource = require('ready-resource')
@@ -84,6 +85,8 @@ async function writeDeviceFile(filename, data = {}) {
     if (value === null) continue
     s += key + '=' + value + nl
   }
+
+  await fs.promises.mkdir(path.dirname(filename), { recursive: true })
 
   const fd = await open(filename, 'w')
   const st = await fstat(fd)
