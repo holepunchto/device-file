@@ -36,8 +36,9 @@ module.exports = class DeviceFile extends ReadyResource {
       this.data = data
     }
 
+    this.fd = fd
+
     if (this.lock) {
-      this.fd = fd
       if (!(await lockFd(this.fd, this.wait))) {
         await this._release()
         throw new Error('Device file is locked')
