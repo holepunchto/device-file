@@ -158,7 +158,7 @@ async function verifyDeviceFile(filename, data = {}) {
     if (result[k] === undefined) continue // allow upserts
     if (result[k] !== '' + v) {
       await close(fd)
-      throw new Error('Invalid device file, ' + k + ' has changed')
+      throw new Error('Invalid device file, ' + k + ' has changed. Was ' + v + ', is ' + result[k])
     }
   }
 
