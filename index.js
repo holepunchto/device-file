@@ -43,7 +43,7 @@ module.exports = class DeviceFile extends ReadyResource {
         throw new Error('Device file is locked')
       }
     } else {
-      await this._release()
+      await this._release(fd)
     }
   }
 
@@ -51,9 +51,9 @@ module.exports = class DeviceFile extends ReadyResource {
     return this._release()
   }
 
-  async _release() {
-    if (!this.fd) return
-    await close(this.fd)
+  async _release(fd = this.fd) {
+    if (!fd) return
+    await close(fd)
     this.fd = 0
   }
 
