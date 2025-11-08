@@ -3,6 +3,7 @@ const path = require('path')
 const fsx = require('fs-native-extensions')
 const b4a = require('b4a')
 const ReadyResource = require('ready-resource')
+const onexit = require('resource-on-exit')
 
 const PLATFORM = global.Bare ? global.Bare.platform : global.process.platform
 const IS_WIN = PLATFORM === 'win32'
@@ -39,6 +40,7 @@ module.exports = class DeviceFile extends ReadyResource {
     this.fd = fd
 
     if (this.lock) {
+      onexit.add(this, closeSync)
       if (!(await lockFd(this.fd, this.wait))) {
         await this._release()
         throw new Error('Device file is locked')
@@ -54,8 +56,10 @@ module.exports = class DeviceFile extends ReadyResource {
 
   async _release() {
     if (!this.fd) return
-    await close(this.fd)
+    const fd = this.fd
     this.fd = 0
+    onexit.remove(this)
+    await close(fd)
   }
 
   async suspend() {
@@ -74,6 +78,7 @@ module.exports = class DeviceFile extends ReadyResource {
     this.updating = true
     const { fd } = await verifyDeviceFile(this.filename, this.data)
     this.fd = fd
+    onexit.add(this, closeSync)
     await lockFd(this.fd, this.wait)
     this.updating = false
   }
@@ -267,4 +272,11 @@ function open(filename, flags) {
       resolve(fd)
     })
   })
+}
+
+function closeSync(device) {
+  if (!device.fd) return
+  const fd = device.fd
+  device.fd = 0
+  fs.closeSync(fd)
 }
