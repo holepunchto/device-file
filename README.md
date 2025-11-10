@@ -11,12 +11,12 @@ Stores some metadata about the device and complains if it thinks its been modifi
 ## Usage
 
 ```js
-const { create, resume } = require('device-file')
+const DeviceFile = require('device-file')
 
-await create('DEVICE', { appId: 'my-app-id' }) // pass whatever unique data you have for the device/app
+const d = new DeviceFile('DEVICE', { data: { appId: 'my-app-id' }})
 
 // throws if DEVICE was modified or user data doesnt match or if it looks like an unsafe backup
-await resume('DEVICE', { appId: 'my-app-id' })
+await d.ready()
 ```
 
 ## License
