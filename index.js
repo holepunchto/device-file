@@ -45,6 +45,10 @@ module.exports = class DeviceFile extends ReadyResource {
     }
   }
 
+  transfer() {
+    return this.lock ? this.lock.transfer() : -1
+  }
+
   async _close() {
     if (this.lock) await this.lock.close()
   }
