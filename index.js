@@ -19,43 +19,44 @@ module.exports = class DeviceFile extends ReadyResource {
     super()
 
     this.filename = filename
-    this.create = create
-    this.wait = wait
-    this.lock = lock
     this.data = data
-    this.fdl = null
+    this.lock = null
+
+    this._create = create
+    this._wait = wait
+    this._lock = lock
   }
 
   async _open() {
     let { fd, data } = await verifyDeviceFile(this.filename, this.data)
 
     if (fd === 0) {
-      if (!this.create) throw new Error('No device file present')
+      if (!this._create) throw new Error('No device file present')
       fd = await writeDeviceFile(this.filename, this.data)
     } else {
       this.data = data
     }
 
-    if (this.lock) {
-      this.fdl = new FDLock(fd, { wait: this.wait })
-      await this.fdl.ready()
+    if (this._lock) {
+      this.lock = new FDLock(fd, { wait: this._wait })
+      await this.lock.ready()
     } else {
       await close(fd)
     }
   }
 
   async _close() {
-    if (this.fdl) await this.fdl.close()
+    if (this.lock) await this.lock.close()
   }
 
   async suspend() {
     if (!this.opened) await this.ready()
-    if (this.fdl) await this.fdl.suspend()
+    if (this.lock) await this.lock.suspend()
   }
 
   async resume() {
     if (!this.opened) await this.ready()
-    if (this.fdl) await this.fdl.resume()
+    if (this.lock) await this.lock.resume()
   }
 }
 
