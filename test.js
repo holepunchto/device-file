@@ -34,7 +34,6 @@ test('lockable', async function (t) {
     await b.ready()
   } catch {
     t.pass('errored')
-    t.is(b.fd, 0)
   }
 
   await a.close()

@@ -3,7 +3,7 @@ const path = require('path')
 const fsx = require('fs-native-extensions')
 const b4a = require('b4a')
 const ReadyResource = require('ready-resource')
-const onexit = require('resource-on-exit')
+const FDLock = require('fd-lock')
 
 const PLATFORM = global.Bare ? global.Bare.platform : global.process.platform
 const IS_WIN = PLATFORM === 'win32'
@@ -18,13 +18,12 @@ module.exports = class DeviceFile extends ReadyResource {
   constructor(filename, { create = true, wait = false, lock = wait, data = {} } = {}) {
     super()
 
-    this.fd = 0
     this.filename = filename
     this.create = create
-    this.updating = false
     this.wait = wait
     this.lock = lock
     this.data = data
+    this.fdl = null
   }
 
   async _open() {
@@ -37,50 +36,26 @@ module.exports = class DeviceFile extends ReadyResource {
       this.data = data
     }
 
-    this.fd = fd
-
     if (this.lock) {
-      onexit.add(this, closeSync)
-      if (!(await lockFd(this.fd, this.wait))) {
-        await this._release()
-        throw new Error('Device file is locked')
-      }
+      this.fdl = new FDLock(fd, { wait: this.wait })
+      await this.fdl.ready()
     } else {
-      await this._release()
+      await close(fd)
     }
   }
 
-  _close() {
-    return this._release()
-  }
-
-  async _release() {
-    if (!this.fd) return
-    const fd = this.fd
-    this.fd = 0
-    onexit.remove(this)
-    await close(fd)
+  async _close() {
+    if (this.fdl) await this.fdl.close()
   }
 
   async suspend() {
     if (!this.opened) await this.ready()
-    if (this.updating) return
-
-    this.updating = true
-    await this._release()
-    this.updating = false
+    if (this.fdl) await this.fdl.suspend()
   }
 
   async resume() {
     if (!this.opened) await this.ready()
-    if (!this.lock || this.fd || this.updating) return
-
-    this.updating = true
-    const { fd } = await verifyDeviceFile(this.filename, this.data)
-    this.fd = fd
-    onexit.add(this, closeSync)
-    await lockFd(this.fd, this.wait)
-    this.updating = false
+    if (this.fdl) await this.fdl.resume()
   }
 }
 
@@ -259,12 +234,6 @@ function read(fd) {
   })
 }
 
-async function lockFd(fd, wait) {
-  if (!wait) return fsx.tryLock(fd)
-  await fsx.waitForLock(fd)
-  return true
-}
-
 function open(filename, flags) {
   return new Promise((resolve, reject) => {
     fs.open(filename, flags, (err, fd) => {
@@ -272,11 +241,4 @@ function open(filename, flags) {
       resolve(fd)
     })
   })
-}
-
-function closeSync(device) {
-  if (!device.fd) return
-  const fd = device.fd
-  device.fd = 0
-  fs.closeSync(fd)
 }
