@@ -185,7 +185,7 @@ async function verifyDeviceFile(device) {
   device.data = result
   return true
 
-  async function teardown () {
+  async function teardown() {
     if (device.lock) await device.lock.close()
     else await close(fd)
   }
