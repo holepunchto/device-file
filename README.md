@@ -13,7 +13,7 @@ Stores some metadata about the device and complains if it thinks its been modifi
 ```js
 const DeviceFile = require('device-file')
 
-const d = new DeviceFile('DEVICE', { data: { appId: 'my-app-id' }})
+const d = new DeviceFile('DEVICE', { data: { appId: 'my-app-id' } })
 
 // throws if DEVICE was modified or user data doesnt match or if it looks like an unsafe backup
 await d.ready()
