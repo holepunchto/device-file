@@ -29,7 +29,7 @@ module.exports = class DeviceFile extends ReadyResource {
 
   async _open() {
     if (await verifyDeviceFile(this)) return
-    if (!this._create) throw new Error('No device file present')
+    if (!this._create) throwDeviceFileError('No device file present', false)
     await writeDeviceFile(this)
   }
 
@@ -155,7 +155,7 @@ async function verifyDeviceFile(device) {
     if (result[k] === undefined) continue // allow upserts
     if (result[k] !== '' + v) {
       await teardown()
-      throw new Error('Invalid device file, ' + k + ' has changed. Was ' + result[k] + ', is ' + v)
+      throwDeviceFileError(`Invalid device file, ${k} has changed. Was ${result[k]}, is ${v}`, true)
     }
   }
 
@@ -167,17 +167,17 @@ async function verifyDeviceFile(device) {
 
   if (platform && platform !== PLATFORM) {
     await teardown()
-    throw new Error('Invalid device file, was made on different platform')
+    throwDeviceFileError('Invalid device file, was made on different platform', true)
   }
 
   if (!sameAttr) {
     await teardown()
-    throw new Error('Invalid device file, was moved unsafely')
+    throwDeviceFileError('Invalid device file, was moved unsafely', true)
   }
 
   if (st.ino !== inode || (created && Math.abs(modified - created) >= MODIFIED_SLACK)) {
     await teardown()
-    throw new Error('Invalid device file, was modified')
+    throwDeviceFileError('Invalid device file, was modified', true)
   }
 
   if (!device.lock) await close(fd)
@@ -265,4 +265,11 @@ function open(filename, flags) {
       resolve(fd)
     })
   })
+}
+
+function throwDeviceFileError(message, fatal) {
+  const err = new Error(message)
+  err.code = 'DEVICE_FILE'
+  err.fatal = fatal
+  throw err
 }
