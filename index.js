@@ -37,8 +37,9 @@ class DeviceFile extends ReadyResource {
     const file = new DeviceFile(filename, { create: false, wait: false, data })
     try {
       await verifyDeviceFile(file)
-    } catch {
-      return false
+    } catch (err) {
+      if (err.fatal && err.code === 'DEVICE_FILE') return false
+      throw err
     }
     return true
   }
