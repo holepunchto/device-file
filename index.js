@@ -14,7 +14,7 @@ const ATTR = IS_LINUX ? 'user.device-file' : 'device-file'
 
 const nl = IS_WIN ? '\r\n' : '\n'
 
-module.exports = class DeviceFile extends ReadyResource {
+class DeviceFile extends ReadyResource {
   constructor(filename, { create = true, wait = false, lock = wait, data = {} } = {}) {
     super()
 
@@ -31,6 +31,12 @@ module.exports = class DeviceFile extends ReadyResource {
     if (await verifyDeviceFile(this)) return
     if (!this._create) throwDeviceFileError('No device file present', false)
     await writeDeviceFile(this)
+  }
+
+  static async validate(filename, data) {
+    const file = new DeviceFile(filename, { create: false, wait: false, data })
+    if (!await verifyDeviceFile(file)) return false
+    return true
   }
 
   transfer() {
@@ -51,6 +57,8 @@ module.exports = class DeviceFile extends ReadyResource {
     if (this.lock) await this.lock.resume()
   }
 }
+
+module.exports = DeviceFile
 
 async function writeDeviceFile(device) {
   let s = ''
