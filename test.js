@@ -19,6 +19,7 @@ test('basic', async function (t) {
   }
 
   t.pass('no crashes')
+  t.ok(await DeviceFile.validate(p))
 })
 
 test('lockable', async function (t) {

@@ -35,7 +35,11 @@ class DeviceFile extends ReadyResource {
 
   static async validate(filename, data) {
     const file = new DeviceFile(filename, { create: false, wait: false, data })
-    if (!await verifyDeviceFile(file)) return false
+    try {
+      await verifyDeviceFile(file)
+    } catch {
+      return false
+    }
     return true
   }
 
