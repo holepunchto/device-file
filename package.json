@@ -1,6 +1,6 @@
 {
   "name": "device-file",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Device only file",
   "main": "index.js",
   "files": [
