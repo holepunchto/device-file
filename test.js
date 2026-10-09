@@ -40,3 +40,23 @@ test('lockable', async function (t) {
   await a.close()
   await b.close()
 })
+
+test.solo('reopen', async function (t) {
+  const tmp = await t.tmp()
+  const p = path.join(tmp, 'TEST')
+
+  {
+    const d = new DeviceFile(p)
+    await d.ready()
+    await d.close()
+  }
+
+  {
+    const d = new DeviceFile(p)
+    await d.ready()
+    await d.close()
+  }
+
+  t.pass('no crashes')
+  t.ok(await DeviceFile.validate(p))
+})
